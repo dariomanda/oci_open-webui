@@ -1,0 +1,98 @@
+- name: Setup Podman Host on OCI (Ubuntu 24.04)
+  hosts: all
+  become: true
+  tasks:
+    # --- 1. Installation (APT Only) ---
+    - name: Install Podman and tooling
+      ansible.builtin.apt:
+        update_cache: true
+        pkg:
+          - podman
+          - buildah
+          - uidmap
+          - slirp4netns
+          - podman-compose       # Standard in Ubuntu 24.04
+          - iptables-persistent  # Required for persistence
+          - netfilter-persistent
+
+    # --- 2. Fix DNS Configuration (Systemd Loopback Fix) ---
+    - name: Ensure /etc/containers directory exists
+      ansible.builtin.file:
+        path: /etc/containers
+        state: directory
+        mode: "0755"
+
+    - name: Configure global Podman DNS
+      ansible.builtin.copy:
+        dest: /etc/containers/containers.conf
+        mode: "0644"
+        content: |
+          [containers]
+          # Fix: Bypass broken 127.0.0.53 stub
+          # Use Google (8.8.8.8) and Cloudflare (1.1.1.1)
+          dns_servers = ["8.8.8.8", "1.1.1.1"]
+      notify: Restart Podman Socket
+
+    # --- 3. Firewall Fixes (Delete REJECT, then Allow) ---
+    
+    # CRITICAL: Remove OCI's default "Reject All" rules.
+    # These rules are the #1 cause of connectivity issues in OCI.
+    - name: Remove OCI default REJECT rule (INPUT)
+      ansible.builtin.iptables:
+        chain: INPUT
+        reject_with: icmp-host-prohibited
+        jump: REJECT
+        state: absent
+      notify: Save IPtables Rules
+
+    - name: Remove OCI default REJECT rule (FORWARD)
+      ansible.builtin.iptables:
+        chain: FORWARD
+        reject_with: icmp-host-prohibited
+        jump: REJECT
+        state: absent
+      notify: Save IPtables Rules
+
+    # Now add our Allow rules. We insert at position 1 to be safe.
+    - name: Allow Input from All Containers (DNS/Gateway Access)
+      ansible.builtin.iptables:
+        chain: INPUT
+        source: "10.0.0.0/8"   # Covers 10.88.x.x, 10.89.x.x, and custom networks
+        jump: ACCEPT
+        action: insert
+        rule_num: 1
+      notify: Save IPtables Rules
+
+    - name: Allow Forwarding for All Containers (NAT Fix)
+      ansible.builtin.iptables:
+        chain: FORWARD
+        source: "10.0.0.0/8"
+        jump: ACCEPT
+        action: insert
+        rule_num: 1
+      notify: Save IPtables Rules
+
+    - name: Allow Established/Related Traffic (Return Traffic)
+      ansible.builtin.iptables:
+        chain: INPUT
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+        action: insert
+        rule_num: 1
+      notify: Save IPtables Rules
+
+    # --- 4. Service Start ---
+    - name: Enable Podman socket
+      ansible.builtin.service:
+        name: podman.socket
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Restart Podman Socket
+      ansible.builtin.service:
+        name: podman.socket
+        state: restarted
+
+    - name: Save IPtables Rules
+      ansible.builtin.shell: netfilter-persistent save

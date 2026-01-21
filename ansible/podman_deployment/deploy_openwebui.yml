@@ -1,0 +1,50 @@
+---
+- name: Deploy application with Podman Compose (root)
+  hosts: all
+  become: true
+  vars:
+    deploy_path: /home/ubuntu/openwebui
+    deploy_owner: ubuntu
+    deploy_group: ubuntu
+    compose_command: "podman-compose"
+  tasks:
+    - name: Ensure deploy directory exists
+      ansible.builtin.file:
+        path: "{{ deploy_path }}"
+        state: directory
+        owner: "{{ deploy_owner }}"
+        group: "{{ deploy_group }}"
+        mode: "0755"
+
+    - name: Ensure rsync is installed
+      ansible.builtin.apt:
+        name: rsync
+        state: present
+        update_cache: true
+
+    - name: Sync repository contents to remote (exclude infra folders)
+      ansible.builtin.synchronize:
+        src: "{{ playbook_dir }}/../"
+        dest: "{{ deploy_path }}/"
+        rsync_opts:
+          - "--exclude=opentofu"
+          - "--exclude=ansible"
+          - "--exclude=.git"
+      become: false
+
+    - name: Stop Podman Compose stack (if running)
+      ansible.builtin.command: "{{ compose_command }} down"
+      args:
+        chdir: "{{ deploy_path }}"
+      become: true
+      become_user: root
+      register: podman_compose_down
+      failed_when: false
+      changed_when: podman_compose_down.rc == 0
+
+    - name: Run Podman Compose as root
+      ansible.builtin.command: "{{ compose_command }} up -d --build"
+      args:
+        chdir: "{{ deploy_path }}"
+      become: true
+      become_user: root

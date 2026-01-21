@@ -1,0 +1,92 @@
+services:
+  traefik:
+    image: "docker.io/library/traefik:latest"
+    container_name: "traefik"
+    restart: unless-stopped
+    command:
+#      - "--log.level=DEBUG"
+      - "--api=false"
+      - "--providers.docker=true"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
+      - "--providers.docker.network=traefik"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.websecure.http.tls.certresolver=myresolver"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+#      - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - "/opt/letsencrypt:/letsencrypt"
+#      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/run/podman/podman.sock:/var/run/docker.sock"
+    networks:
+      - traefik
+  oci-openai-gateway:
+    build: .
+    container_name: oci-openai-gateway
+    ports:
+      - "8088:8088"
+    restart: unless-stopped
+    environment:
+      - GATEWAY_API_KEY=${OPENAI_API_KEYS}
+    networks:
+      traefik:
+        aliases:
+          - oci-openai-gateway
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    volumes:
+      - ./open-webui:/app/backend/data
+    environment:
+      ENABLE_SIGNUP: "True"
+      OPENAI_API_BASE_URLS: ${OPENAI_API_BASE_URLS}
+      OPENAI_API_KEYS: ${OPENAI_API_KEYS}
+      ENABLE_EVALUATION_ARENA_MODELS: "False"
+      WEBUI_URL: ${WEBUI_URL}
+      RAG_EMBEDDING_ENGINE: ${RAG_EMBEDDING_ENGINE}
+      RAG_EMBEDDING_MODEL: ${RAG_EMBEDDING_MODEL}
+      RAG_OPENAI_API_KEY: ${OPENAI_API_KEYS}
+      RAG_OPENAI_API_BASE_URL: ${RAG_OPENAI_API_BASE_URL}
+      RAG_FULL_CONTEXT: ${RAG_FULL_CONTEXT}
+      
+      # Security: Secret key for sessions (from .env)
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      
+      # OIDC Configuration for Oracle Identity Domains (from .env)
+#      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
+#      OAUTH_CLIENT_SECRET: ${OAUTH_CLIENT_SECRET}
+#      OPENID_PROVIDER_URL: ${OPENID_PROVIDER_URL}
+#      OPENID_REDIRECT_URI: ${OPENID_REDIRECT_URI}
+      
+      # OAuth Provider Display Settings
+#      OAUTH_PROVIDER_NAME: "Oracle Cloud"
+#      OAUTH_SCOPES: "openid email profile"
+      
+      # OAuth Behavior
+#      ENABLE_OAUTH_SIGNUP: "true"
+#      OAUTH_MERGE_ACCOUNTS_BY_EMAIL: "false"
+#      ENABLE_OAUTH_PERSISTENT_CONFIG: "false"
+#      OAUTH_RESPONSE_MODE: ${OAUTH_RESPONSE_MODE}
+
+    restart: unless-stopped
+    networks:
+      traefik:
+        aliases:
+          - open-webui
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.webui.rule=Host(`${WEBUI_HOST}`)"
+      - "traefik.http.routers.webui.entrypoints=websecure"
+      - "traefik.http.routers.webui.tls.certresolver=myresolver"
+      - "traefik.http.services.webui.loadbalancer.server.port=8080"
+networks:
+  traefik:
+    name: traefik
