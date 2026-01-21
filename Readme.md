@@ -1,4 +1,13 @@
-# Deployment
+# Description
+
+This repository packages multiple Docker containers to easily deploy Opene WebUI on a lightweight OCI Compute VM. It integrates Open WebUI with LLMs deployed in Oracle Generative AI Service via a gateway Python application, by exposing an OpenAI Compatible API, so that Open WebUI talk to LLMs hosted by the Oracle Generative AI Service.
+Additionally, Letsencrypt is used to obtain secure LetsEncrypt SSL Certificates for the frontend application.
+
+OpenTofu scripts are provided to easily deploy Infrastructue.
+
+Ansible playbooks are provided to setup software dependencies and to automate the deployment of the Application with Podman and Docker.
+
+# Please follwo the below guide to Setup your OCI Environment and deploy the application
 
 # 1. Create Compartment
 
@@ -79,6 +88,15 @@ You will also see in the OCI console that the new instance is running:
 
 ![Open WebUI instance](/docs/open_webui_instance.png)
 
+## 4.3 Verify if Instance Principal access to OCI Generative AI Service is working:
+
+You can verify on the host VM if Instance Principal access is working for debugging purposes, but you'll need to setup oci cli on the host VM. Please refer to the [OCI CLI Setup Documentation for Linux](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#InstallingCLI__linux_and_unix)
+
+After OCI CLI is installed on the host VM, execute the following command to list the available models in your region. Just replace the correct compartment ID:
+
+
+```oci generative-ai model-collection list-models --compartment-id ocid1.compartment.oc1..xxx --auth instance_principal```
+
 # 5. Setup DNS A Record in your DNS Provider
 
 Since Open WebUI is a Web Application, we need to create a **A Record** in our DNS Provider to point to the Public IP of our VM.
@@ -97,6 +115,37 @@ We use ansible to automate the Software Installation. Refer to the Ansible docum
 * [Ansible Setup for Linux](https://docs.ansible.com/projects/ansible/latest/installation_guide/installation_distros.html)
 
 * [Ansible Setup for Mac with Homebrew](https://formulae.brew.sh/formula/ansible)
+
+### 6.1.1 Prepare Open WebUI environment file
+
+All important environment file must be set in a ```.env``` file. For this reason, an ```.env_template```file can be found in the main folder of the repository and can be used as an reference.
+
+These are the most important environment files, which must be set:
+
+*OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxx*
+
+This tells the ```oci-openai-gateway``` container in which compartment the OCI Generative AI Service will be used.
+
+
+*OPENAI_API_KEYS="sk-xxx"*
+
+This environment Variable is used by the ```oci-openai-gateway``` container to expose an OpenAI Compatible API, secured by an API Key. The same API Key is used by the ```open-webui``` container to authenticate to the ```oci-openai-gateway``` container.
+
+
+*WEBUI_SECRET_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*
+
+This variable is used for Persistent Sessions throgh restarts of the container applications.
+
+
+*WEBUI_URL=https://example.com*
+
+*WEBUI_HOST=example.com*
+
+These are importnt for Open WebUI to function correctly, but also by the Traefik Reverse Proxy Container to obtain LetsEncrypt SSL Certificates.
+
+
+
+###
 
 ## 6.2 Install Podman with Ansible
 We will deploy the application with Podman and docker compose. To setup podman with all dependencies, execute the following ansible playbook (do not forget the comma after the IP Address, it is important):
