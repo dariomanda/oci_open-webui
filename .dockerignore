@@ -1,0 +1,4 @@
+open-webui/
+.git
+pycache
+*.log
