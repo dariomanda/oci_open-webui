@@ -24,7 +24,7 @@
 
     - name: Sync repository contents to remote (exclude infra folders)
       ansible.builtin.synchronize:
-        src: "{{ playbook_dir }}/../"
+        src: "{{ playbook_dir }}/../../"
         dest: "{{ deploy_path }}/"
         rsync_opts:
           - "--exclude=opentofu"
