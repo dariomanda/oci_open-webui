@@ -1,6 +1,6 @@
 # Description
 
-This repository packages multiple Docker containers to easily deploy Opene WebUI on a lightweight OCI Compute VM. It integrates Open WebUI with LLMs deployed in Oracle Generative AI Service via a gateway Python application, by exposing an OpenAI Compatible API, so that Open WebUI talk to LLMs hosted by the Oracle Generative AI Service.
+This repository packages multiple Docker containers to easily deploy Open WebUI on a lightweight OCI Compute VM. It integrates Open WebUI with LLMs deployed in Oracle Generative AI Service via a gateway Python application, by exposing an OpenAI Compatible API, so that Open WebUI talk to LLMs hosted by the Oracle Generative AI Service.
 Additionally, Letsencrypt is used to obtain secure LetsEncrypt SSL Certificates for the frontend application.
 
 OpenTofu scripts are provided to easily deploy Infrastructue.
