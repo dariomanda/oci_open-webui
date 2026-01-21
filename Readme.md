@@ -7,6 +7,14 @@ OpenTofu scripts are provided to easily deploy Infrastructue.
 
 Ansible playbooks are provided to setup software dependencies and to automate the deployment of the Application with Podman and Docker.
 
+**The Credis of the OCI OpenAI-Compatible API Gateway application go to:**
+
+[Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agentsOCI-OpenAI-gateway)
+
+and to **jin38324**
+
+[modelsOCI-toOpenAI](https://github.com/RETAJD/modelsOCI-toOpenAI/tree/main)
+
 # Please follwo the below guide to Setup your OCI Environment and deploy the application
 
 # 1. Create Compartment
