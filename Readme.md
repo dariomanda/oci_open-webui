@@ -179,3 +179,52 @@ After executing the deployment Ansible playbook, wait two minutes and give Traef
 When everything is finished, open your domain in the browser and create an Administrator Account for Open WebUI and start chatting :)
 
 ![Create Admin Account](/docs/create_admin_account.png)
+
+## 7.1 Model Selection
+
+LLMs and Embedding models can be defined in the ```models.yaml``` file.
+
+In the current models file, models from ```eu-frankfurt-1``` region are added, but this can be changed, acording to your needs. The Compartment ID is taken from the ```.env``` file
+
+```yaml
+- region: eu-frankfurt-1
+  compartment_id: ${OCI_COMPARTMENT_ID}
+  models:
+    ondemand:
+      - name: cohere.command-plus-latest
+        model_id: cohere.command-plus-latest
+        description: "delivers roughly 50% higher throughput and 25% lower latencies as compared to the previous Command R+ version, while keeping the hardware footprint the same."
+        "tool_call": True,  
+        "stream_tool_call": True,  
+
+      - name: cohere.command-latest
+        model_id: cohere.command-latest
+        description: "delivers roughly 50% higher throughput and 25% lower latencies as compared to the previous Command R+ version, while keeping the hardware footprint the same."
+        "tool_call": True,  
+        "stream_tool_call": True,  
+
+      - name: meta.llama-3.3-70b-instruct
+        model_id: meta.llama-3.3-70b-instruct
+        description: "Model has 70 billion parameters.Accepts text-only inputs and produces text-only outputs.Delivers better performance than both Llama 3.1 70B and Llama 3.2 90B for text tasks.Maximum prompt + response length 128,000 tokens for each run.For on-demand inferencing, the response length is capped at 4,000 tokens for each run."
+        "tool_call": True,
+        "stream_tool_call": True,
+      
+      - name: openai.gpt-oss-120b
+        model_id: openai.gpt-oss-120b
+        description: "gpt-oss-120b"
+        "tool_call": True,  
+        "stream_tool_call": True, 
+
+      - name: openai.gpt-oss-20b
+        model_id: openai.gpt-oss-20b
+        description: "gpt-oss-20b"
+        "tool_call": True,  
+        "stream_tool_call": True,
+
+    embedding:
+      - name: cohere.embed-multilingual-v3.0
+        model_id: cohere.embed-multilingual-v3.0
+        description: "Cohere multilingual embedding model v3.0"
+```
+
+
