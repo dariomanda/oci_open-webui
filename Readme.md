@@ -1,84 +1,127 @@
-# Description
+# oci_open-webui
 
-This repository packages multiple Docker containers to easily deploy Open WebUI on a lightweight OCI Compute VM. It integrates Open WebUI with LLMs deployed in Oracle Generative AI Service via a gateway Python application, by exposing an OpenAI Compatible API, so that Open WebUI talk to LLMs hosted by the Oracle Generative AI Service.
-Additionally, Letsencrypt is used to obtain secure LetsEncrypt SSL Certificates for the frontend application.
+This repository provides a setup to easily run [Open WebUI](https://docs.openwebui.com/) on [Oracle Cloud Infrastructure (OCI)](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm) fully integrated with LLMs within [Oracle Generative AI Service](https://docs.oracle.com/en-us/iaas/Content/generative-ai/home.htm).
 
-OpenTofu scripts are provided to easily deploy Infrastructue.
+[Open WebUI](https://docs.openwebui.com/) runs on a lightweight [OCI compute VM instance](https://docs.oracle.com/en-us/iaas/Content/Compute/Concepts/computeoverview.htm) with LLMs accessed by a [Python API service gateway](https://github.com/dariomanda/oci_open-webui/tree/main/api) by exposing an [OpenAI-compatible API](https://docs.openwebui.com/getting-started/quick-start/starting-with-openai-compatible/). Your  Open WebUI application service will thus talk to these LLMs hosted in the same OCI region.
 
-Ansible playbooks are provided to setup software dependencies and to automate the deployment of the Application with Podman and Docker.
+[OpenTofu](https://opentofu.org/) scripts are provided to easily deploy infrastructure. [Ansible playbooks](https://docs.ansible.com/projects/ansible/latest/getting_started/index.html) are provided to set up software dependencies and to automate the deployment of the application with [Podman](https://github.com/containers/podman) or [Docker](https://docs.docker.com/). Additionally, [Let's Encrypt](https://letsencrypt.org/) is used to obtain secure SSL certificates for the frontend application, automatically making the application securely available under `https://`.
 
-**The Credis of the OCI OpenAI-Compatible API Gateway application go to:**
+- [oci\_open-webui](#oci_open-webui)
+- [Prerequisites](#prerequisites)
+- [Quickstart](#quickstart)
+  - [1. Create Compartment](#1-create-compartment)
+  - [2. Dynamic Group](#2-dynamic-group)
+  - [3. Create Policy](#3-create-policy)
+  - [4. Deploy the Infrastructure with OpenTofu on OCI](#4-deploy-the-infrastructure-with-opentofu-on-oci)
+    - [4.1 Create OpenTofu tfvars file](#41-create-opentofu-tfvars-file)
+    - [4.2 Initialize OpenTofu and deploy the infrastructure](#42-initialize-opentofu-and-deploy-the-infrastructure)
+    - [4.3 Verify whether instance principal access to OCI Generative AI Service is working](#43-verify-whether-instance-principal-access-to-oci-generative-ai-service-is-working)
+  - [5. Set up DNS A record in your DNS provider](#5-set-up-dns-a-record-in-your-dns-provider)
+  - [6. Provision and deploy Open WebUI with Ansible](#6-provision-and-deploy-open-webui-with-ansible)
+    - [6.1 Prepare Open WebUI Ansible environment file](#61-prepare-open-webui-ansible-environment-file)
+    - [6.2 Provision the host](#62-provision-the-host)
+    - [6.3 Deploy Open WebUI with Ansible](#63-deploy-open-webui-with-ansible)
+    - [6.4 Verify the deployment on the VM](#64-verify-the-deployment-on-the-vm)
+    - [6.5 Log in to Open WebUI and create an admin account](#65-log-in-to-open-webui-and-create-an-admin-account)
+  - [7. Model Selection](#7-model-selection)
+- [Credits](#credits)
 
-[Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agentsOCI-OpenAI-gateway)
 
-and to **jin38324**
+# Prerequisites
 
-[modelsOCI-toOpenAI](https://github.com/RETAJD/modelsOCI-toOpenAI/tree/main)
+Our guide assumes that you have set up the following:  
+* [Your own OCI tenancy (free tier available)](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm) 
+* You have administrative access to a OCI tenancy.
 
-# Please follwo the below guide to Setup your OCI Environment and deploy the application
+Additionally you have installed the following tools locally:   
+* [OCI Command Line Interface `oci`](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
+* [OpenTofu](https://opentofu.org/docs/intro/install/)
+* [Ansible Setup](https://docs.ansible.com/projects/ansible/latest/installation_guide/installation_distros.html)
 
-# 1. Create Compartment
+If you are under MacOS, all these dependencies can be easily installed via [Homebrew](https://brew.sh/):
+```bash
+brew update
+brew install ansible opentofu oci-cli  
+```
 
-At first, a compartment must be created, where the future OpenWebui VM will reside.
-As seen in the sccreenshot below, I created the ***open_webui*** Compartment under a parent Compartment (***Dario_Mandic***)
+# Quickstart
+
+Please follow the guide below to set up your OCI environment and deploy the application .
+
+## 1. Create Compartment
+
+First, a compartment must be created where the future Open WebUI VM will reside.
+As seen in the screenshot below, I created the ***open_webui*** compartment under a parent compartment (***Dario_Mandic***)
 
 ![Open WebUI Compartment](/docs/open_webui_compartment.png)
 
+Head to [OCI Identity -> Compartments](https://cloud.oracle.com/identity/compartments), create a new compartment and make a note of your new unique compartment's OCID, like `ocid1.compartment.oc1..xxx`.
 
-# 2. Dynamic Group
-To allow instance principal access to OCI GenAI Service, we need to create a dynamic group first. The dynamic group is createrd in the **Default** Identity Domain.
+## 2. Dynamic Group
+To allow [instance principals](https://blogs.oracle.com/developers/accessing-the-oracle-cloud-infrastructure-api-using-instance-principals) to authorize a compute instance to access OCI GenAI Service, we need to create a dynamic group first. Head to [OCI Identity -> Domains -> Dynamic Groups](https://cloud.oracle.com/identity/domains) for this. These dynamic groups should be typically created in your **default** identity domain. 
 
 ```All {instance.compartment.id = 'ocid1.compartment.oc1..xxx'}```
 
-This dynamci group matches all instances in the provided compartement id.
+This dynamic group matches all instances in your provided compartment OCID (don't forget to change it with yours!).
 
 ![Dynamic Group](/docs/open-webui_dynamic_group.png)
 
-To make it more restrictive, it is also possible to create a dynameic group for only one instance:
+To make it more restrictive, it is also possible to create a dynamic group for only one instance:
 
 ```Any {instance.id = 'ocid1.instance.oc1.eu-frankfurt-1.xxx'}```
 
-# 3. Create Policy
+## 3. Create Policy
 
-Beside the Compartment and the Dynamic Group, we also need to create a Policy, to allow Instance Principal access from the Open WebUI VM inside the *Open WebUI* Compartment.
+Besides the compartment and the dynamic group, we also need to create a policy to allow instance principal access from the Open WebUI VM inside the *Open WebUI* compartment. Head to [OCI Identity -> Policies](https://cloud.oracle.com/identity/domains/policies) for this.
 
 ```Allow dynamic-group open-webui to use generative-ai-family in compartment open_webui```
 
-As seen in the Screenshot below, the *open_webui* compartment is only one level below the Parent Compartment *Dario_Mandic*, therefore, direct addressing of the *open_webui* Comaprtment is possible.
+As seen in the screenshot below, the *open_webui* compartment is only one level below the parent compartment *Dario_Mandic* (our your root compartment). Therefore, direct addressing of the *open_webui* compartment is possible.
 
 ![OCI GenAI access policy](/docs/genai_access_policy.png)
 
-If you attach the policy two or more levels above the *open_webui* compartment, you'll need to specify the compartment path relative to the compartment, where the policy is attached.
-here we have an example, where the target Compartment is two levels below the Compartment, where the Policy is attached.
+If you attach the policy two or more levels above the *open_webui* compartment, you'll need to specify the compartment path relative to the compartment where the policy is attached.
+Here we have an example where the target compartment is two levels below the compartment where the policy is attached.
 
 ```Allow dynamic-group open-webui to use generative-ai-family in compartment <child>:<grandchild>:open_webui```
 
 
-# 4. Deploy the Infrastructure with OpenTofu in OCI
+## 4. Deploy the Infrastructure with OpenTofu on OCI
 
-We use OCI CLI and OpenTofu do deploy our infrastructure in OCI.
-To install OCI CLI and OpenTofu for your system, please refer to the following documentation:
+Ensure that you have installed all [prerequisites](#prerequisites) and the OCI cli [is fully configured](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliconfigure.htm) before continuing. 
 
-* [OCI CLI Quickstart](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
-* [OpenTofu Installation](https://opentofu.org/docs/intro/install/)
-
-## 4.1 Create OpenTofu tfvars file
-
-After installing and Configuraing OCI CLI and installing OpenTofu, you will need to copy the template file: ```opentofu/terraform.tfvars.template``` to ```opentofu/terraform.tfvars``` and update the content with real values for Compartment ID, Compute Instance Shape, OCI Region, your public SSH key, etc.
-
-## 4.2 Initialize Opentofu and deploy the Infrastructure
-
-After having setting up the tfvars file, you can deploy the infrastructure with a few commands from the command line inside the ```opentofu/``` folder.
-
-1. Initialize OpenTofu: ```tofu init``` <br />
-The Output should be something like: <br />
-```OpenTofu has been successfully initialized!```
-2. Apply the Infrastructure: ```tofu apply``` <br />
-Review the output and confirm with ```yes```if everything is correct.
-
-after everything is finished you should receive a confirmation that everything is deployed:
-
+A very typical test command is listing your current Object Storage buckets (return code must be `0` even if you have none):
+```bash
+oci os bucket list
+echo $?
+# 0
 ```
+
+### 4.1 Create OpenTofu tfvars file
+
+You will need to copy the template file: `opentofu/terraform.tfvars.template` to `opentofu/terraform.tfvars` and update the content with real values for compartment ID, compute instance shape, OCI region, your public SSH key, etc.
+
+```bash
+cp opentofu/terraform.tfvars.template opentofu/terraform.tfvars
+```
+
+### 4.2 Initialize OpenTofu and deploy the infrastructure
+
+After setting up the tfvars file, you can deploy the infrastructure with a few commands from the command line inside the ```opentofu/``` folder.
+
+```bash
+cd opentofu
+
+# 1. Initialize OpenTofu
+tofu init
+# OpenTofu has been successfully initialized!
+
+# 2. Apply the infrastructure
+tofu apply
+
+# Review the output and confirm with ```yes``` if everything is correct.
+
+# After everything is finished you should receive a confirmation that everything is deployed:
 Apply complete! Resources: 6 added, 0 changed, 0 destroyed.
 
 Outputs:
@@ -86,105 +129,107 @@ Outputs:
 public_ip = "xxx.xxx.xxx.xxx"
 ```
 
-Note the Public IP, because we will need it in the next step.
+Note the public IP, because we will need it in the next step.
 
-SSH into the created instance, by using the Public IP from the output in the console to see if everything is working with: ```ssh ubuntu@xxx.xxx.xxx.xxx```
+SSH into the created instance using the public IP from the output in the console to see if everything is working with: ```ssh ubuntu@xxx.xxx.xxx.xxx```
 
-Logging into the compute instance over SSH is important, because th servers public key needs to be added to the know_hosts file by logging in once. After doing this, ansible playbooks, which are needed later can be executded.
+Logging into the compute instance over SSH is important because the server's public key needs to be added to the known_hosts file by logging in once. After doing this, Ansible playbooks, which are needed later, can be executed.
 
 You will also see in the OCI console that the new instance is running:
 
 ![Open WebUI instance](/docs/open_webui_instance.png)
 
-## 4.3 Verify if Instance Principal access to OCI Generative AI Service is working:
+### 4.3 Verify whether instance principal access to OCI Generative AI Service is working
 
-You can verify on the host VM if Instance Principal access is working for debugging purposes, but you'll need to setup oci cli on the host VM. Please refer to the [OCI CLI Setup Documentation for Linux](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#InstallingCLI__linux_and_unix)
+You can verify on the host VM if instance principal access is working for debugging purposes, but you'll need to set up OCI CLI on the host VM. Please refer to the [OCI CLI Setup Documentation for Linux](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm#InstallingCLI__linux_and_unix)
 
 After OCI CLI is installed on the host VM, execute the following command to list the available models in your region. Just replace the correct compartment ID:
 
 
-```oci generative-ai model-collection list-models --compartment-id ocid1.compartment.oc1..xxx --auth instance_principal```
+```bash
+oci generative-ai model-collection list-models --auth instance_principal --compartment-id ocid1.compartment.oc1..xxx
+```
 
-# 5. Setup DNS A Record in your DNS Provider
+## 5. Set up DNS A record in your DNS provider
 
-Since Open WebUI is a Web Application, we need to create a **A Record** in our DNS Provider to point to the Public IP of our VM.
-We will use Traefik as a reverse Proxy to get LetsEncrypt SSL Certificates for the configured domain.
+Since Open WebUI is a web application, we need to create an **A record** in our DNS provider to point to the public IP of our VM.
+We will use Traefik as a reverse proxy to get Let's Encrypt SSL certificates for the configured domain.
 
-Lets say we have the following chat.mydomain.com for our Open WebUI application. Make sure to Setup this acordingly in your DNS provider, so that chat.mydomain.com resolves to the Public IP from the previous output.
+Let's say we have the following chat.mydomain.com for our Open WebUI application. Make sure to set this accordingly in your DNS provider, so that chat.mydomain.com resolves to the public IP from the previous output.
 
-Below is an example, but the setup is slightly different for every DNS Provider.
+Below is an example, but the setup is slightly different for every DNS provider.
 ![A Record](/docs/a_record.png)
 
-# 6. Install software dependencies with Ansible and deploy the OpenWebui
+## 6. Provision and deploy Open WebUI with Ansible
 
-## 6.1 Install Ansible on your machine
-We use ansible to automate the Software Installation. Refer to the Ansible documentation to setup Ansible on your machine:
-
-* [Ansible Setup for Linux](https://docs.ansible.com/projects/ansible/latest/installation_guide/installation_distros.html)
-
-* [Ansible Setup for Mac with Homebrew](https://formulae.brew.sh/formula/ansible)
-
-### 6.1.1 Prepare Open WebUI environment file
-
-All important environment file must be set in a ```.env``` file. For this reason, an ```.env_template```file can be found in the main folder of the repository and can be used as an reference.
-
-These are the most important environment files, which must be set:
-
-*OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxx*
-
-This tells the ```oci-openai-gateway``` container in which compartment the OCI Generative AI Service will be used.
+Similar to opentofu/terraform, we expect that you have already installed all [prerequisites](#prerequisites) regarding Ansible.
 
 
-*OPENAI_API_KEYS="sk-xxx"*
+### 6.1 Prepare Open WebUI Ansible environment file
 
-This environment Variable is used by the ```oci-openai-gateway``` container to expose an OpenAI Compatible API, secured by an API Key. The same API Key is used by the ```open-webui``` container to authenticate to the ```oci-openai-gateway``` container.
+All important environment variables must be set in a `.env` file. For this reason, an `.env_template` file can be found in the main folder of the repository and can be used as a reference.
+
+```bash
+# ensure your current working directory is the repository root folder again
+cd ..
+
+# copy the template
+cp .env_template .env
+```
+
+These are the most important environment variables:
+
+**`OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxx`**: This tells the `oci-openai-gateway` container in which compartment the OCI Generative AI Service will be used.
 
 
-*WEBUI_SECRET_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx*
-
-This variable is used for Persistent Sessions throgh restarts of the container applications.
+**`OPENAI_API_KEYS="sk-xxx"`**: This environment variable is used by the `oci-openai-gateway` container to expose an OpenAI-compatible API, secured by an API key. The same API key is used by the `open-webui` container to authenticate to the `oci-openai-gateway` container, meaning it's all internally. Simply replace `xxx` with an unique value, e.g. [an UUIDv4](https://www.uuidgenerator.net/version4).
 
 
-*WEBUI_URL=https://example.com*
+**`WEBUI_SECRET_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`**: This variable is used for persistent sessions through restarts of the container applications. Similar to above, insert a random value here, e.g. [an UUIDv4](https://www.uuidgenerator.net/version4).
 
-*WEBUI_HOST=example.com*
+**`WEBUI_URL=https://example.com`**: The public domain (as you've set your A record)
 
-These are importnt for Open WebUI to function correctly, but also by the Traefik Reverse Proxy Container to obtain LetsEncrypt SSL Certificates.
+**`WEBUI_HOST=example.com`**: This is again important for Open WebUI to function correctly, but also by the Traefik reverse proxy container to obtain Let's Encrypt SSL certificates.
 
 
+### 6.2 Provision the host 
+We will provision the host with Podman and Docker Compose. To set up Podman with all dependencies, execute the following Ansible playbook (do not forget the comma after the IP address; it is important):
 
-###
+```bash
+ansible-playbook -u ubuntu ansible/podman_deployment/podman_setup.yml -i xxx.xxx.xxx.xxx,
+```
 
-## 6.2 Install Podman with Ansible
-We will deploy the application with Podman and docker compose. To setup podman with all dependencies, execute the following ansible playbook (do not forget the comma after the IP Address, it is important):
-
-```ansible-playbook -i xxx.xxx.xxx.xxx, -u ubuntu ansible/podman_deployment/podman_setup.yml```
-
-## 6.3 Deploy Open WebUI with Ansible
+### 6.3 Deploy Open WebUI with Ansible
 
 After Podman is installed, you can deploy the containers (Traefik + Open WebUI + OCI Gateway) with the following playbook:
 
-```ansible-playbook -i xxx.xxx.xxx.xxx, -u ubuntu ansible/podman_deployment/deploy_openwebui.yml```
+```bash
+ansible-playbook -u ubuntu ansible/podman_deployment/deploy_openwebui.yml -i xxx.xxx.xxx.xxx,
+```
 
-## 6.4 Verify the deployment on the VM
+### 6.4 Verify the deployment on the VM
 
 SSH into the instance and check that the stack is up:
 
-```sudo podman ps```
+```bash
+ssh ubuntu@xxx.xxx.xxx.xxx
+sudo su
+podman ps
+```
 
-## 6.5 Login into Open WebUI and create admin Account
+### 6.5 Log in to Open WebUI and create an admin account
 
-After executing the deployment Ansible playbook, wait two minutes and give Traefik Reverse Proxy some time to retreive LetsEncrypt SSL Certificates for your domain.
+After executing the deployment Ansible playbook, wait two minutes and give the Traefik reverse proxy some time to retrieve Let's Encrypt SSL certificates for your domain.
 
-When everything is finished, open your domain in the browser and create an Administrator Account for Open WebUI and start chatting :)
+When everything is finished, open your domain in the browser and create an administrator account for Open WebUI and start chatting :)
 
 ![Create Admin Account](/docs/create_admin_account.png)
 
-## 7.1 Model Selection
+## 7. Model Selection
 
-LLMs and Embedding models can be defined in the ```models.yaml``` file.
+LLMs and embedding models can be defined in the ```models.yaml``` file.
 
-In the current models file, models from ```eu-frankfurt-1``` region are added, but this can be changed, acording to your needs. The Compartment ID is taken from the ```.env``` file
+In the current models file, models from the ```eu-frankfurt-1``` region are added, but this can be changed according to your needs. The compartment ID is taken from the ```.env``` file
 
 ```yaml
 - region: eu-frankfurt-1
@@ -205,7 +250,7 @@ In the current models file, models from ```eu-frankfurt-1``` region are added, b
 
       - name: meta.llama-3.3-70b-instruct
         model_id: meta.llama-3.3-70b-instruct
-        description: "Model has 70 billion parameters.Accepts text-only inputs and produces text-only outputs.Delivers better performance than both Llama 3.1 70B and Llama 3.2 90B for text tasks.Maximum prompt + response length 128,000 tokens for each run.For on-demand inferencing, the response length is capped at 4,000 tokens for each run."
+        description: "Model has 70 billion parameters. Accepts text-only inputs and produces text-only outputs. Delivers better performance than both Llama 3.1 70B and Llama 3.2 90B for text tasks. Maximum prompt + response length is 128,000 tokens for each run. For on-demand inferencing, the response length is capped at 4,000 tokens for each run."
         "tool_call": True,
         "stream_tool_call": True,
       
@@ -227,4 +272,9 @@ In the current models file, models from ```eu-frankfurt-1``` region are added, b
         description: "Cohere multilingual embedding model v3.0"
 ```
 
+# Credits
 
+**The credits of the OCI OpenAI-compatible API Gateway application go to:**
+
+* [Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agentsOCI-OpenAI-gateway)
+* and to **jin38324**'s [modelsOCI-toOpenAI](https://github.com/RETAJD/modelsOCI-toOpenAI/tree/main)
