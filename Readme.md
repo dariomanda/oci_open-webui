@@ -266,6 +266,24 @@ In the current models file, models from the ```eu-frankfurt-1``` region are adde
         "tool_call": True,  
         "stream_tool_call": True,
 
+      - name: google.gemini-2.5-flash
+        model_id: google.gemini-2.5-flash
+        description: "google.gemini-2.5-flash"
+        "tool_call": True,  
+        "stream_tool_call": True,
+
+      - name: google.gemini-2.5-flash-lite
+        model_id: google.gemini-2.5-flash-lite
+        description: "google.gemini-2.5-flash-lite"
+        "tool_call": True,  
+        "stream_tool_call": True,
+
+      - name: google.gemini-2.5-pro
+        model_id: google.gemini-2.5-pro
+        description: "google.gemini-2.5-pro"
+        "tool_call": True,  
+        "stream_tool_call": True,
+
     embedding:
       - name: cohere.embed-multilingual-v3.0
         model_id: cohere.embed-multilingual-v3.0
