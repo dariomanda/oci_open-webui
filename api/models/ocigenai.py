@@ -353,7 +353,7 @@ class OCIGenAIModel(BaseChatModel):
                 cohere_chatRequest.chat_history = chatHistory
             chat_detail.chat_request = cohere_chatRequest
 
-        elif provider in ("meta", "openai"):
+        elif provider in ("meta", "openai", "google"):
             generic_chatRequest = oci_models.GenericChatRequest(**inference_config)
             generic_chatRequest.numGenerations = chat_request.n
             if provider == "meta":
@@ -461,7 +461,7 @@ class OCIGenAIModel(BaseChatModel):
                     # message = ChatResponseMessage(
                     #         tool_calls=openai_tool_calls
                     #         )
-            elif model_id.startswith("meta") or model_id.startswith("openai"):
+            elif model_id.startswith("meta") or model_id.startswith("openai") or model_id.startswith("google"):
                 # Generic chat streaming chunk
                 text = chunk.get("message", {}).get("content", [{}])[0].get("text") or chunk.get("text")
                 if text is not None:
