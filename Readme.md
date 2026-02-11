@@ -181,6 +181,7 @@ These are the most important environment variables:
 
 **`OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxx`**: This tells the `oci-openai-gateway` container in which compartment the OCI Generative AI Service will be used.
 
+**`OCI_REGION=eu-frankfurt-1`**: Used in the `oci-openai-gateway` container and in the ```models.yml``` to set the correct OCI Region for LLM Inference
 
 **`OPENAI_API_KEYS="sk-xxx"`**: This environment variable is used by the `oci-openai-gateway` container to expose an OpenAI-compatible API, secured by an API key. The same API key is used by the `open-webui` container to authenticate to the `oci-openai-gateway` container, meaning it's all internally. Simply replace `xxx` with an unique value, e.g. [an UUIDv4](https://www.uuidgenerator.net/version4).
 
@@ -294,5 +295,5 @@ In the current models file, models from the ```eu-frankfurt-1``` region are adde
 
 **The credits of the OCI OpenAI-compatible API Gateway application go to:**
 
-* [Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agentsOCI-OpenAI-gateway)
+* [Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agents-oci-openai-gateway)
 * and to **jin38324**'s [modelsOCI-toOpenAI](https://github.com/RETAJD/modelsOCI-toOpenAI/tree/main)

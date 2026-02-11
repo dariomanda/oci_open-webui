@@ -1,4 +1,4 @@
-- region: eu-frankfurt-1
+- region: ${OCI_GENAI}
   compartment_id: ${OCI_COMPARTMENT_ID}
   models:
     ondemand:
@@ -49,6 +49,36 @@
         description: "google.gemini-2.5-pro"
         "tool_call": True,  
         "stream_tool_call": True,
+
+      # - name: xai.grok-3
+      #   model_id: xai.grok-3
+      #   description: "xai.grok-3"
+      #   "tool_call": True,  
+      #   "stream_tool_call": True,
+
+      # - name: xai.grok-3-fast
+      #   model_id: xai.grok-3-fast
+      #   description: "xai.grok-3-fast"
+      #   "tool_call": True,  
+      #   "stream_tool_call": True,
+
+      # - name: xai.grok-3-mini
+      #   model_id: xai.grok-3-mini
+      #   description: "xai.grok-3-mini"
+      #   "tool_call": True,  
+      #   "stream_tool_call": True,
+
+      # - name: xai.grok-3-mini-fast
+      #   model_id: xai.grok-3-mini-fast
+      #   description: "xai.grok-3-mini-fast"
+      #   "tool_call": True,  
+      #   "stream_tool_call": True,
+
+      # - name: xai.grok-4
+      #   model_id: xai.grok-4
+      #   description: "xai.grok-4"
+      #   "tool_call": True,  
+      #   "stream_tool_call": True,
 
     embedding:
       - name: cohere.embed-multilingual-v3.0

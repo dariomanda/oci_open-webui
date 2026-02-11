@@ -36,6 +36,7 @@ services:
     restart: unless-stopped
     environment:
       - GATEWAY_API_KEY=${OPENAI_API_KEYS}
+      - OCI_REGION=${OCI_REGION}
     networks:
       traefik:
         aliases:
@@ -56,7 +57,7 @@ services:
       RAG_OPENAI_API_KEY: ${OPENAI_API_KEYS}
       RAG_OPENAI_API_BASE_URL: ${RAG_OPENAI_API_BASE_URL}
       RAG_FULL_CONTEXT: ${RAG_FULL_CONTEXT}
-      
+      DEFAULT_USER_ROLE: "pending"
       # Security: Secret key for sessions (from .env)
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
       
