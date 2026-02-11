@@ -230,10 +230,8 @@ When everything is finished, open your domain in the browser and create an admin
 
 LLMs and embedding models can be defined in the ```models.yaml``` file.
 
-In the current models file, models from the ```eu-frankfurt-1``` region are added, but this can be changed according to your needs. The compartment ID is taken from the ```.env``` file
-
 ```yaml
-- region: eu-frankfurt-1
+- region: ${OCI_REGION}
   compartment_id: ${OCI_COMPARTMENT_ID}
   models:
     ondemand:
