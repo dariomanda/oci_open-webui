@@ -1,4 +1,4 @@
-- region: ${OCI_GENAI}
+- region: ${OCI_REGION}
   compartment_id: ${OCI_COMPARTMENT_ID}
   models:
     ondemand:
