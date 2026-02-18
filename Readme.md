@@ -270,18 +270,21 @@ LLMs and embedding models can be defined in the ```models.yaml``` file.
         description: "google.gemini-2.5-flash"
         "tool_call": True,  
         "stream_tool_call": True,
+        "multimodal": True,
 
       - name: google.gemini-2.5-flash-lite
         model_id: google.gemini-2.5-flash-lite
         description: "google.gemini-2.5-flash-lite"
         "tool_call": True,  
         "stream_tool_call": True,
+        "multimodal": True,
 
       - name: google.gemini-2.5-pro
         model_id: google.gemini-2.5-pro
         description: "google.gemini-2.5-pro"
         "tool_call": True,  
         "stream_tool_call": True,
+        "multimodal": True,
 
     embedding:
       - name: cohere.embed-multilingual-v3.0
