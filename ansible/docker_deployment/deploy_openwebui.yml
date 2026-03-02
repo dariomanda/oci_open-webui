@@ -6,7 +6,7 @@
     deploy_path: /home/ubuntu/openwebui
     deploy_owner: ubuntu
     deploy_group: ubuntu
-    compose_command: "docker compose"
+    compose_service_name: openwebui.service
   tasks:
     - name: Ensure deploy directory exists
       ansible.builtin.file:
@@ -32,19 +32,34 @@
           - "--exclude=.git"
       become: false
 
-    - name: Stop Docker Compose stack (if running)
-      ansible.builtin.command: "{{ compose_command }} down"
-      args:
-        chdir: "{{ deploy_path }}"
-      become: true
-      become_user: root
-      register: docker_compose_down
-      failed_when: false
-      changed_when: docker_compose_down.rc == 0
+    - name: Provision systemd unit for Docker Compose stack
+      ansible.builtin.copy:
+        dest: "/etc/systemd/system/{{ compose_service_name }}"
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=OpenWebUI service with Docker Compose
+          PartOf=docker.service
+          After=docker.service
 
-    - name: Run Docker Compose
-      ansible.builtin.command: "{{ compose_command }} up -d --build"
-      args:
-        chdir: "{{ deploy_path }}"
-      become: true
-      become_user: root
+          [Service]
+          Type=oneshot
+          RemainAfterExit=true
+          WorkingDirectory={{ deploy_path }}
+          ExecStart=/usr/bin/docker compose up -d --build --remove-orphans
+          ExecStop=/usr/bin/docker compose down
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Enable and restart Docker Compose systemd unit
+      ansible.builtin.systemd:
+        name: "{{ compose_service_name }}"
+        enabled: true
+        state: restarted

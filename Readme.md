@@ -23,6 +23,7 @@ This repository provides a setup to easily run [Open WebUI](https://docs.openweb
     - [6.3 Deploy Open WebUI with Ansible](#63-deploy-open-webui-with-ansible)
     - [6.4 Verify the deployment on the VM](#64-verify-the-deployment-on-the-vm)
     - [6.5 Log in to Open WebUI and create an admin account](#65-log-in-to-open-webui-and-create-an-admin-account)
+    - [6.6 Update running containers when main/latest tags change](#66-update-running-containers-when-mainlatest-tags-change)
   - [7. Model Selection](#7-model-selection)
 - [Credits](#credits)
 
@@ -31,7 +32,8 @@ This repository provides a setup to easily run [Open WebUI](https://docs.openweb
 
 Our guide assumes that you have set up the following:  
 * [Your own OCI tenancy (free tier available)](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm) 
-* You have administrative access to a OCI tenancy.
+* You have administrative access to an OCI tenancy.
+* You own a domain and have access to a DNS service to add your own A record.
 
 Additionally you have installed the following tools locally:   
 * [OCI Command Line Interface `oci`](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
@@ -46,7 +48,7 @@ brew install ansible opentofu oci-cli
 
 # Quickstart
 
-Please follow the guide below to set up your OCI environment and deploy the application .
+Please follow the guide below to set up your OCI environment and deploy the application.
 
 ## 1. Create Compartment
 
@@ -208,6 +210,8 @@ After Podman is installed, you can deploy the containers (Traefik + Open WebUI +
 ansible-playbook -u ubuntu ansible/podman_deployment/deploy_openwebui.yml -i xxx.xxx.xxx.xxx,
 ```
 
+The deployment provisions a systemd unit named `openwebui.service` that manages the compose stack and is enabled to start automatically after reboot.
+
 ### 6.4 Verify the deployment on the VM
 
 SSH into the instance and check that the stack is up:
@@ -215,6 +219,7 @@ SSH into the instance and check that the stack is up:
 ```bash
 ssh ubuntu@xxx.xxx.xxx.xxx
 sudo su
+systemctl status openwebui.service
 podman ps
 ```
 
@@ -225,6 +230,29 @@ After executing the deployment Ansible playbook, wait two minutes and give the T
 When everything is finished, open your domain in the browser and create an administrator account for Open WebUI and start chatting :)
 
 ![Create Admin Account](/docs/create_admin_account.png)
+
+### 6.6 Update running containers when main/latest tags change
+
+If upstream images (for example `ghcr.io/open-webui/open-webui:main`) are updated, pull the latest images and restart the systemd service:
+
+```bash
+ssh ubuntu@xxx.xxx.xxx.xxx
+sudo su
+cd /home/ubuntu/openwebui
+
+# Podman
+podman-compose pull
+systemctl restart openwebui.service
+```
+
+Verify:
+
+```bash
+systemctl status openwebui.service
+podman ps
+```
+
+If you changed repository code/config (not only upstream image tags), run the deployment Ansible playbook again.
 
 ## 7. Model Selection
 
