@@ -31,7 +31,8 @@ This repository provides a setup to easily run [Open WebUI](https://docs.openweb
 
 Our guide assumes that you have set up the following:  
 * [Your own OCI tenancy (free tier available)](https://docs.oracle.com/en-us/iaas/Content/FreeTier/freetier.htm) 
-* You have administrative access to a OCI tenancy.
+* You have administrative access to an OCI tenancy.
+* You own a domain and have access to a DNS service to add your own A record.
 
 Additionally you have installed the following tools locally:   
 * [OCI Command Line Interface `oci`](https://docs.oracle.com/en-us/iaas/Content/API/SDKDocs/cliinstall.htm)
@@ -46,7 +47,7 @@ brew install ansible opentofu oci-cli
 
 # Quickstart
 
-Please follow the guide below to set up your OCI environment and deploy the application .
+Please follow the guide below to set up your OCI environment and deploy the application.
 
 ## 1. Create Compartment
 
