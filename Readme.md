@@ -182,6 +182,7 @@ These are the most important environment variables:
 
 **`OCI_COMPARTMENT_ID=ocid1.compartment.oc1..xxx`**: This tells the `oci-openai-gateway` container in which compartment the OCI Generative AI Service will be used.
 
+**`OCI_REGION=eu-frankfurt-1`**: Used in the `oci-openai-gateway` container and in the ```models.yml``` to set the correct OCI Region for LLM Inference
 
 **`OPENAI_API_KEYS="sk-xxx"`**: This environment variable is used by the `oci-openai-gateway` container to expose an OpenAI-compatible API, secured by an API key. The same API key is used by the `open-webui` container to authenticate to the `oci-openai-gateway` container, meaning it's all internally. Simply replace `xxx` with an unique value, e.g. [an UUIDv4](https://www.uuidgenerator.net/version4).
 
@@ -230,10 +231,8 @@ When everything is finished, open your domain in the browser and create an admin
 
 LLMs and embedding models can be defined in the ```models.yaml``` file.
 
-In the current models file, models from the ```eu-frankfurt-1``` region are added, but this can be changed according to your needs. The compartment ID is taken from the ```.env``` file
-
 ```yaml
-- region: eu-frankfurt-1
+- region: ${OCI_REGION}
   compartment_id: ${OCI_COMPARTMENT_ID}
   models:
     ondemand:
@@ -267,6 +266,27 @@ In the current models file, models from the ```eu-frankfurt-1``` region are adde
         "tool_call": True,  
         "stream_tool_call": True,
 
+      - name: google.gemini-2.5-flash
+        model_id: google.gemini-2.5-flash
+        description: "google.gemini-2.5-flash"
+        "tool_call": True,  
+        "stream_tool_call": True,
+        "multimodal": True,
+
+      - name: google.gemini-2.5-flash-lite
+        model_id: google.gemini-2.5-flash-lite
+        description: "google.gemini-2.5-flash-lite"
+        "tool_call": True,  
+        "stream_tool_call": True,
+        "multimodal": True,
+
+      - name: google.gemini-2.5-pro
+        model_id: google.gemini-2.5-pro
+        description: "google.gemini-2.5-pro"
+        "tool_call": True,  
+        "stream_tool_call": True,
+        "multimodal": True,
+
     embedding:
       - name: cohere.embed-multilingual-v3.0
         model_id: cohere.embed-multilingual-v3.0
@@ -277,5 +297,5 @@ In the current models file, models from the ```eu-frankfurt-1``` region are adde
 
 **The credits of the OCI OpenAI-compatible API Gateway application go to:**
 
-* [Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agentsOCI-OpenAI-gateway)
+* [Oracle technology-engineering](https://github.com/oracle-devrel/technology-engineering/tree/main/ai/gen-ai-agents/agents-oci-openai-gateway)
 * and to **jin38324**'s [modelsOCI-toOpenAI](https://github.com/RETAJD/modelsOCI-toOpenAI/tree/main)

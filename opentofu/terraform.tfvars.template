@@ -1,11 +1,11 @@
 ##OCI Provider Configuration##
-tenancy_ocid     = "ocid1.tenancy.oc1..xxxx" # https://cloud.oracle.com/tenancy
-user_ocid        = "ocid1.user.oc1..xxxx" # https://cloud.oracle.com/identity/domains/my-profile/details
-private_key_path = "~/.oci/oci_api_key.pem" # https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm and https://cloud.oracle.com/identity/domains/my-profile/auth-tokens
-fingerprint      = "00:00..." # https://docs.oracle.com/en-us/iaas/Content/API/Concepts/apisigningkey.htm and https://cloud.oracle.com/identity/domains/my-profile/auth-tokens
-region           = "eu-frankfurt-1" # https://cloud.oracle.com/regions
-compartment_id   = "ocid1.compartment.oc1..xxxx" # https://cloud.oracle.com/identity/compartments 
-ssh_key          = "ssh-rsa xxxx mykey" # typically cat ~/.ssh/id_rsa.pub OR cat ~/.ssh/id_ed25519.pub
+tenancy_ocid     = "ocid1.tenancy.oc1..xxxx"
+user_ocid        = "ocid1.user.oc1..xxxx"
+private_key_path = "~/.oci/oci_api_key.pem"
+fingerprint      = "00:00..."
+region           = "eu-frankfurt-1"
+compartment_id   = "ocid1.compartment.oc1..xxxx"
+ssh_key          = "ssh-rsa xxxx mykey"
 profile          = "DEFAULT"
 
 ##Compute Instance Configuration##

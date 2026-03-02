@@ -16,7 +16,11 @@ EMBED_TRUNCATE = "END"
 AUTH_TYPE = "INSTANCE_PRINCIPAL"
 OCI_CONFIG_FILE = "~/.oci/config"
 OCI_CONFIG_FILE_KEY = "DEFAULT"
-INFERENCE_ENDPOINT_TEMPLATE = "https://inference.generativeai.eu-frankfurt-1.oci.oraclecloud.com/20231130"
+
+OCI_REGION = os.getenv("OCI_REGION", "eu-frankfurt-1")
+INFERENCE_ENDPOINT_TEMPLATE = (
+    f"https://inference.generativeai.{OCI_REGION}.oci.oraclecloud.com/20231130"
+)
 
 TITLE = "OCI Generative AI Proxy APIs"
 SUMMARY = "OpenAI-Compatible RESTful APIs for OCI Generative AI Service"
