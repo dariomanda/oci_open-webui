@@ -60,6 +60,8 @@ services:
       DEFAULT_USER_ROLE: "pending"
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
       BYPASS_MODEL_ACCESS_CONTROL: "True"
+      CONTENT_EXTRACTION_ENGINE: tika
+      TIKA_SERVER_URL: http://tika:9998
       
       # OIDC Configuration for Oracle Identity Domains (from .env)
 #      OAUTH_CLIENT_ID: ${OAUTH_CLIENT_ID}
@@ -88,6 +90,17 @@ services:
       - "traefik.http.routers.webui.entrypoints=websecure"
       - "traefik.http.routers.webui.tls.certresolver=myresolver"
       - "traefik.http.services.webui.loadbalancer.server.port=8080"
+  tika:
+    image: "docker.io/apache/tika:latest"
+    container_name: "tika"
+    ports:
+      - "9998:9998"
+
+    restart: unless-stopped
+    networks:
+      traefik:
+        aliases:
+          - oci-openai-gateway
 networks:
   traefik:
     name: traefik
